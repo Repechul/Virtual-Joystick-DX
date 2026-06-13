@@ -1,7 +1,7 @@
 # Virtual Joystick DX
 <br>
 <div align="center">
- <img src="addons/virtual_joystick_DX/vjdx_asset_icon.svg" width="256">
+ <img src="addons/virtual_joystick_DX/vjdx_asset_icon.png" width="256">
  </div>
  <br>
 
