@@ -57,7 +57,7 @@ The Inspector hides parameters that don't apply to the selected style. All hidde
 | `action_up` | `ui_up` |
 | `action_down` | `ui_down` |
 
-Action fields show a dropdown with all InputMap actions (built-in + user-defined) and also accept typed input.
+Set the inputs according to what you have configured in Project → Project Settings → Input Mapping.
 
 ### Active Region
 | Property | Default | Description |
