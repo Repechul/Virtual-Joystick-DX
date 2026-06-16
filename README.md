@@ -59,12 +59,6 @@ The Inspector hides parameters that don't apply to the selected style. All hidde
 
 Action fields show a dropdown with all InputMap actions (built-in + user-defined) and also accept typed input.
 
-### Dynamic Visibility
-| Property | Default | Description |
-|---|---|---|
-| `auto_hide_on_physical_input` | `true` | Hides when a gamepad connects, a key is pressed, or the physical gamepad stick/buttons are used. |
-| `auto_show_on_touch` | `true` | Re-shows on screen touch even if a gamepad is still connected. Using the gamepad again hides it. |
-
 ### Active Region
 | Property | Default | Description |
 |---|---|---|
