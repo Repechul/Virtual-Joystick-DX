@@ -1,4 +1,6 @@
 @tool
+## A fully customizable virtual joystick for touchscreen mobile games. Switch between a smooth 360° analog joystick and an 8-direction D-Pad.
+
 @icon("res://addons/virtual_joystick_DX/vjdx_icon.svg")
 extends Control
 class_name VirtualJoystickDeluxe
