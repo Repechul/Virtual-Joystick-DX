@@ -14,7 +14,7 @@ enum DpadPreset {PRESET_1, PRESET_2}
 signal joystick_moved(direction: Vector2)
 ## Emitted when the control is released.
 signal joystick_released()
-#s Emitted when visibility changes automatically due to hardware detection.
+## Emitted when visibility changes automatically due to hardware detection.
 signal hardware_visibility_changed(is_visible: bool)
 #endregion
 
