@@ -12,9 +12,9 @@ enum DpadPreset {PRESET_1, PRESET_2}
 
 ## Emitted every frame the control is moved. direction is a Vector2 [-1,1] per axis.
 signal joystick_moved(direction: Vector2)
-# Emitted when the control is released.
+## Emitted when the control is released.
 signal joystick_released()
-# Emitted when visibility changes automatically due to hardware detection.
+#s Emitted when visibility changes automatically due to hardware detection.
 signal hardware_visibility_changed(is_visible: bool)
 #endregion
 
@@ -33,13 +33,17 @@ signal hardware_visibility_changed(is_visible: bool)
 		joystick_position_mode = v
 		notify_property_list_changed()
 		update_configuration_warnings()
+@export_range(1.0, 6.0, 0.05) var dynamic_tolerance_multiplier: float = 1.5
 
-@export_category("Settings")
-@export_group("Input Mapping")
-@export var action_left: StringName = &"ui_left"
-@export var action_right: StringName = &"ui_right"
-@export var action_up: StringName = &"ui_up"
-@export var action_down: StringName = &"ui_down"
+@export_category("Input Mapping")
+#@export var action_left: StringName = &"ui_left"
+#@export var action_right: StringName = &"ui_right"
+#@export var action_up: StringName = &"ui_up"
+#@export var action_down: StringName = &"ui_down"
+@export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_left : StringName = "ui_left"
+@export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_right : StringName = "ui_right"
+@export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_up : StringName = "ui_up"
+@export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_down : StringName = "ui_down"
 
 @export_category("Dynamic Visibility")
 @export_subgroup("Auto-hide by Hardware")
@@ -50,6 +54,10 @@ signal hardware_visibility_changed(is_visible: bool)
 @export_category("Active Region")
 @export var use_active_region: bool = true:
 	set(v): use_active_region = v; notify_property_list_changed(); queue_redraw()
+@export var debug_show_region: bool = true:
+	set(v): debug_show_region = v; notify_property_list_changed(); queue_redraw()
+@export var debug_region_color: Color = Color(0.1, 1.0, 0.4, 0.80):
+	set(v): debug_region_color = v; queue_redraw()
 
 @export var region_x: float = 0.0:
 	set(v):
@@ -81,10 +89,7 @@ signal hardware_visibility_changed(is_visible: bool)
 ## Computed Rect2 from the four region components. Used internally.
 var active_region: Rect2:
 	get: return Rect2(region_x, region_y, region_w, region_h)
-@export var debug_show_region: bool = true:
-	set(v): debug_show_region = v; notify_property_list_changed(); queue_redraw()
-@export var debug_region_color: Color = Color(0.1, 1.0, 0.4, 0.80):
-	set(v): debug_region_color = v; queue_redraw()
+
 
 @export_category("Size")
 # Joystick (hidden for D-Pad)
@@ -117,11 +122,11 @@ var active_region: Rect2:
 		queue_redraw()
 ## [JOYSTICK + DYNAMIC only] How far (as a multiple of the radius) the finger
 ## can travel from the constrained base center before the control auto-releases.
-@export_range(1.0, 6.0, 0.05) var dynamic_tolerance_multiplier: float = 1.5
-@export var debug_show_deadzone: bool = false:
+@export var debug_show_deadzone: bool = true:
 	set(v): debug_show_deadzone = v; notify_property_list_changed(); queue_redraw()
-@export var debug_deadzone_color: Color = Color(1.0, 0.85, 0.1, 0.75):
+@export var debug_deadzone_color: Color = Color(1.0, 0.1, 0.1, 0.75):
 	set(v): debug_deadzone_color = v; queue_redraw()
+
 
 # Textures
 @export_category("Textures")
