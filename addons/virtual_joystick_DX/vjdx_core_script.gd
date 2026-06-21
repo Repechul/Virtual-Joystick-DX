@@ -7,7 +7,7 @@ class_name VirtualJoystickDX
 
 #region Enums & Signals
 enum ControllerStyle {JOYSTICK, DPAD}
-enum JoystickMode {STATIC, DYNAMIC}
+enum JoystickMode {STATIC, DYNAMIC, FOLLOWING}
 enum DpadPreset {PRESET_1, PRESET_2}
 
 ## Emitted every frame the control is moved. direction is a Vector2 [-1,1] per axis.
@@ -248,7 +248,7 @@ var _preset_cache_dirty: bool = true
 #region Conditional Inspector Visibility
 func _validate_property(property: Dictionary) -> void:
 	var is_joystick: bool = (controller_style == ControllerStyle.JOYSTICK)
-	var is_dynamic: bool = (joystick_mode == JoystickMode.DYNAMIC)
+	var is_movable: bool = (joystick_mode == JoystickMode.DYNAMIC or joystick_mode == JoystickMode.FOLLOWING)
 	var vp: Vector2 = _get_viewport_size()
 	match property.name:
 		"Joystick Mode":
@@ -263,10 +263,10 @@ func _validate_property(property: Dictionary) -> void:
 			if not is_joystick:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
 		"clampzone_ratio", "debug_clampzone":
-			if not (is_joystick and is_dynamic):
+			if not (is_joystick and is_movable):
 				property.usage = PROPERTY_USAGE_NO_EDITOR
 		"clampzone_color":
-			if not (is_joystick and is_dynamic and debug_clampzone):
+			if not (is_joystick and is_movable and debug_clampzone):
 				property.usage = PROPERTY_USAGE_NO_EDITOR
 		"dpad_radius",\
 		"Colors - D-Pad",\
@@ -431,7 +431,12 @@ func _in_start_region(screen_pos: Vector2) -> bool:
 func _begin_touch(index: int, screen_pos: Vector2) -> void:
 	if _touch_index != -1:
 		return
-	if not _in_start_region(screen_pos):
+# FOLLOWING: must touch the joystick's own current rect directly.
+# active_region is ignored for this gate — it only constrains the slide once active.
+	if controller_style == ControllerStyle.JOYSTICK and joystick_mode == JoystickMode.FOLLOWING:
+		if not get_global_rect().has_point(screen_pos):
+			return
+	elif not _in_start_region(screen_pos):
 		return
 	_touch_index = index
 	is_pressed = true
@@ -456,9 +461,9 @@ func _reposition_base(screen_pos: Vector2) -> void:
 	position = new_pos - size / 2.0
 func _update_stick(screen_pos: Vector2) -> void:
 	var radius: float = _active_radius()
-	var is_dynamic_js:  bool = (controller_style == ControllerStyle.JOYSTICK and
-								joystick_mode == JoystickMode.DYNAMIC)
-	var is_static_mode: bool = not is_dynamic_js
+	var is_movable_js: bool = (controller_style == ControllerStyle.JOYSTICK and
+								(joystick_mode == JoystickMode.DYNAMIC or joystick_mode == JoystickMode.FOLLOWING))
+	var is_static_mode: bool = not is_movable_js
 # Active region enforcement
 	if use_active_region and is_static_mode:
 # STATIC joystick and D-Pad: finger leaving the active region = release.
@@ -470,8 +475,10 @@ func _update_stick(screen_pos: Vector2) -> void:
 	var offset: Vector2 = local_pos - _center
 	var dist: float = offset.length()
 
-# DYNAMIC mode: slide base, clamped to active region
-	if is_dynamic_js:
+# DYNAMIC + FOLLOWING: slide base, clamped to active region.
+# Both modes share the exact same follow mechanic from here on —
+# they only differ in how the control gets activated (see _begin_touch).
+	if is_movable_js:
 		if dist > radius * clampzone_ratio:
 			_do_release()
 			return
@@ -513,7 +520,7 @@ func _do_release() -> void:
 	value = Vector2.ZERO
 	_dpad_active = Vector2.ZERO
 	_knob_pos = _center
-	if controller_style == ControllerStyle.JOYSTICK and joystick_mode == JoystickMode.DYNAMIC:
+	if controller_style == ControllerStyle.JOYSTICK and (joystick_mode == JoystickMode.DYNAMIC or joystick_mode == JoystickMode.FOLLOWING):
 		position = _origin_pos
 		_center = size / 2.0
 		_knob_pos = _center
@@ -610,7 +617,7 @@ func _draw() -> void:
 		ControllerStyle.JOYSTICK: _draw_joystick()
 		ControllerStyle.DPAD: _draw_dpad()
 	if Engine.is_editor_hint() and controller_style == ControllerStyle.JOYSTICK \
-			and joystick_mode == JoystickMode.DYNAMIC and debug_clampzone:
+			and (joystick_mode == JoystickMode.DYNAMIC or joystick_mode == JoystickMode.FOLLOWING) and debug_clampzone:
 		_draw_debug_clampzone()
 	if Engine.is_editor_hint() and debug_deadzone:
 		_draw_debug_deadzone()
@@ -772,6 +779,8 @@ func _get_configuration_warnings() -> PackedStringArray:
 	var r: float = _active_radius()
 	if joystick_mode == JoystickMode.DYNAMIC and controller_style == ControllerStyle.DPAD:
 		w.append("DYNAMIC only works with JOYSTICK. The D-Pad always uses STATIC.")
+	if joystick_mode == JoystickMode.FOLLOWING and controller_style == ControllerStyle.DPAD:
+		w.append("FOLLOWING only works with JOYSTICK. The D-Pad always uses STATIC.")
 	if size.x < r * 2.0 or size.y < r * 2.0:
 		w.append("The node is smaller than the control diameter (%dpx). Adjust the size." % int(r * 2.0))
 	if use_active_region and active_region.size == Vector2.ZERO:
