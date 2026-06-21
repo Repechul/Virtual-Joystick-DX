@@ -3,11 +3,11 @@
 
 @icon("res://addons/virtual_joystick_DX/vjdx_icon.svg")
 extends Control
-class_name VirtualJoystickDeluxe
+class_name VirtualJoystickDX
 
 #region Enums & Signals
 enum ControllerStyle {JOYSTICK, DPAD}
-enum JoystickPositionMode {STATIC, DYNAMIC}
+enum JoystickMode {STATIC, DYNAMIC}
 enum DpadPreset {PRESET_1, PRESET_2}
 
 ## Emitted every frame the control is moved. direction is a Vector2 [-1,1] per axis.
@@ -19,45 +19,102 @@ signal hardware_visibility_changed(is_visible: bool)
 #endregion
 
 #region Inspector Parameters
-@export_category("Controller Style")
+@export_category("Controller Settings")
 @export var controller_style: ControllerStyle = ControllerStyle.JOYSTICK:
 	set(v):
 		controller_style = v
 		notify_property_list_changed()
 		queue_redraw()
 		update_configuration_warnings()
+# Joystick (hidden for D-Pad)
+@export_range(20.0, 400.0, 1.0, "suffix:px") var joystick_radius: float = 80.0:
+	set(v):
+		joystick_radius = maxf(v, 10.0)
+		custom_minimum_size = Vector2(joystick_radius * 2.0, joystick_radius * 2.0)
+		notify_property_list_changed()
+		queue_redraw()
+		update_configuration_warnings()
+@export_range(5.0, 200.0, 1.0, "suffix:px") var thumb_radius: float = 28.0:
+	set(v):
+		thumb_radius = maxf(v, 5.0)
+		notify_property_list_changed()
+		queue_redraw()
+# D-Pad (hidden for Joystick)
+@export_range(20.0, 400.0, 1.0, "suffix:px") var dpad_radius: float = 80.0:
+	set(v):
+		dpad_radius = maxf(v, 10.0)
+		notify_property_list_changed()
+		queue_redraw()
+		update_configuration_warnings()
+# Shared
+## Deadzone as a fraction of the radius.
+## Max is capped at the thumb radius (JOYSTICK) so the deadzone never exceeds the thumb size.
+## At 0 the speed is always constant regardless of thumb position.
+@export var deadzone: float = 0.15:
+	set(v):
+		deadzone = clampf(v, 0.0, _max_deadzone())
+		queue_redraw()
+@export var debug_deadzone: bool = true:
+	set(v):
+		debug_deadzone = v
+		notify_property_list_changed()
+		queue_redraw()
+@export var debug_deadzone_color: Color = Color(0.626, 0.014, 0.218, 0.702):
+	set(v):
+		debug_deadzone_color = v
+		queue_redraw()
 
 @export_category("Joystick Mode")
-@export var joystick_position_mode: JoystickPositionMode = JoystickPositionMode.STATIC:
+@export var joystick_mode: JoystickMode = JoystickMode.STATIC:
 	set(v):
-		joystick_position_mode = v
+		joystick_mode = v
 		notify_property_list_changed()
 		update_configuration_warnings()
-@export_range(1.0, 6.0, 0.05) var dynamic_tolerance_multiplier: float = 1.5
+## [JOYSTICK + DYNAMIC only] How far (as a multiple of the radius) the finger
+## can travel from the constrained base center before the control auto-releases.
+@export_range(1.0, 3.0, 0.05) var clampzone_ratio: float = 1.5:
+	set(v):
+		clampzone_ratio = v
+		queue_redraw()
+## [JOYSTICK + DYNAMIC only] Shows a circle representing the auto-release distance
+## (radius * clampzone_ratio) around the base, drawn on top. Editor only.
+@export var debug_clampzone: bool = false:
+	set(v):
+		debug_clampzone = v
+		notify_property_list_changed()
+		queue_redraw()
+@export var clampzone_color: Color = Color(0.994, 1.0, 0.0, 0.612):
+	set(v):
+		clampzone_color = v
+		queue_redraw()
 
 @export_category("Input Mapping")
-#@export var action_left: StringName = &"ui_left"
-#@export var action_right: StringName = &"ui_right"
-#@export var action_up: StringName = &"ui_up"
-#@export var action_down: StringName = &"ui_down"
 @export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_left : StringName = "ui_left"
 @export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_right : StringName = "ui_right"
 @export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_up : StringName = "ui_up"
 @export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_down : StringName = "ui_down"
 
 @export_category("Dynamic Visibility")
-@export_subgroup("Auto-hide by Hardware")
+@export_group("Auto-hide by Hardware")
 @export var auto_hide_on_physical_input: bool = true
 @export var auto_show_on_touch: bool = true
 
 # Active Region
 @export_category("Active Region")
 @export var use_active_region: bool = true:
-	set(v): use_active_region = v; notify_property_list_changed(); queue_redraw()
+	set(v):
+		use_active_region = v
+		notify_property_list_changed()
+		queue_redraw()
 @export var debug_show_region: bool = true:
-	set(v): debug_show_region = v; notify_property_list_changed(); queue_redraw()
+	set(v):
+		debug_show_region = v
+		notify_property_list_changed()
+		queue_redraw()
 @export var debug_region_color: Color = Color(0.1, 1.0, 0.4, 0.80):
-	set(v): debug_region_color = v; queue_redraw()
+	set(v):
+		debug_region_color = v
+		queue_redraw()
 
 @export var region_x: float = 0.0:
 	set(v):
@@ -90,44 +147,6 @@ signal hardware_visibility_changed(is_visible: bool)
 var active_region: Rect2:
 	get: return Rect2(region_x, region_y, region_w, region_h)
 
-
-@export_category("Size")
-# Joystick (hidden for D-Pad)
-@export_range(20.0, 400.0, 1.0, "suffix:px") var joystick_radius: float = 80.0:
-	set(v):
-		joystick_radius = maxf(v, 10.0)
-		custom_minimum_size = Vector2(joystick_radius * 2.0, joystick_radius * 2.0)
-		notify_property_list_changed()
-		queue_redraw()
-		update_configuration_warnings()
-@export_range(5.0, 200.0, 1.0, "suffix:px") var thumb_radius: float = 28.0:
-	set(v):
-		thumb_radius = maxf(v, 5.0)
-		notify_property_list_changed()
-		queue_redraw()
-# D-Pad (hidden for Joystick)
-@export_range(20.0, 400.0, 1.0, "suffix:px") var dpad_radius: float = 80.0:
-	set(v):
-		dpad_radius = maxf(v, 10.0)
-		notify_property_list_changed()
-		queue_redraw()
-		update_configuration_warnings()
-# Shared
-## Deadzone as a fraction of the radius.
-## Max is capped at the thumb radius (JOYSTICK) so the deadzone never exceeds the thumb size.
-## At 0 the speed is always constant regardless of thumb position.
-@export var deadzone: float = 0.15:
-	set(v):
-		deadzone = clampf(v, 0.0, _max_deadzone())
-		queue_redraw()
-## [JOYSTICK + DYNAMIC only] How far (as a multiple of the radius) the finger
-## can travel from the constrained base center before the control auto-releases.
-@export var debug_show_deadzone: bool = true:
-	set(v): debug_show_deadzone = v; notify_property_list_changed(); queue_redraw()
-@export var debug_deadzone_color: Color = Color(1.0, 0.1, 0.1, 0.75):
-	set(v): debug_deadzone_color = v; queue_redraw()
-
-
 # Textures
 @export_category("Textures")
 @export_group("Colors - Joystick")
@@ -145,11 +164,17 @@ var active_region: Rect2:
 
 @export_group("Textures - Joystick")
 @export var tex_joystick_base: Texture2D:
-	set(v): tex_joystick_base = v; queue_redraw()
+	set(v):
+		tex_joystick_base = v
+		queue_redraw()
 @export var tex_joystick_thumb: Texture2D:
-	set(v): tex_joystick_thumb = v; queue_redraw()
+	set(v):
+		tex_joystick_thumb = v
+		queue_redraw()
 @export var tex_joystick_thumb_pressed: Texture2D:
-	set(v): tex_joystick_thumb_pressed = v; queue_redraw()
+	set(v):
+		tex_joystick_thumb_pressed = v
+		queue_redraw()
 
 @export_group("Textures - D-Pad")
 ## If enabled, the D-Pad uses a built-in preset as default.
@@ -167,25 +192,43 @@ var active_region: Rect2:
 		_preset_cache_dirty = true
 		queue_redraw()
 @export var tex_dpad_idle: Texture2D:
-	set(v): tex_dpad_idle = v; queue_redraw()
+	set(v):
+		tex_dpad_idle = v
+		queue_redraw()
 @export_subgroup("Cardinals")
 @export var tex_dpad_up: Texture2D:
-	set(v): tex_dpad_up = v; queue_redraw()
+	set(v):
+		tex_dpad_up = v
+		queue_redraw()
 @export var tex_dpad_down: Texture2D:
-	set(v): tex_dpad_down = v; queue_redraw()
+	set(v):
+		tex_dpad_down = v
+		queue_redraw()
 @export var tex_dpad_left: Texture2D:
-	set(v): tex_dpad_left = v; queue_redraw()
+	set(v):
+		tex_dpad_left = v
+		queue_redraw()
 @export var tex_dpad_right: Texture2D:
-	set(v): tex_dpad_right = v; queue_redraw()
+	set(v):
+		tex_dpad_right = v
+		queue_redraw()
 @export_subgroup("Diagonals")
 @export var tex_dpad_up_right: Texture2D:
-	set(v): tex_dpad_up_right = v; queue_redraw()
+	set(v):
+		tex_dpad_up_right = v
+		queue_redraw()
 @export var tex_dpad_up_left: Texture2D:
-	set(v): tex_dpad_up_left = v; queue_redraw()
+	set(v):
+		tex_dpad_up_left = v
+		queue_redraw()
 @export var tex_dpad_down_right: Texture2D:
-	set(v): tex_dpad_down_right = v; queue_redraw()
+	set(v):
+		tex_dpad_down_right = v
+		queue_redraw()
 @export var tex_dpad_down_left: Texture2D:
-	set(v): tex_dpad_down_left = v; queue_redraw()
+	set(v):
+		tex_dpad_down_left = v
+		queue_redraw()
 #endregion
 
 #region Internal State
@@ -205,13 +248,13 @@ var _preset_cache_dirty: bool = true
 #region Conditional Inspector Visibility
 func _validate_property(property: Dictionary) -> void:
 	var is_joystick: bool = (controller_style == ControllerStyle.JOYSTICK)
-	var is_dynamic: bool = (joystick_position_mode == JoystickPositionMode.DYNAMIC)
+	var is_dynamic: bool = (joystick_mode == JoystickMode.DYNAMIC)
 	var vp: Vector2 = _get_viewport_size()
 	match property.name:
 		"Joystick Mode":
 			if not is_joystick:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
-		"joystick_position_mode",\
+		"joystick_mode",\
 		"joystick_radius", "thumb_radius",\
 		"Colors - Joystick",\
 		"color_js_base", "color_js_border", "color_js_thumb", "color_js_thumb_active",\
@@ -219,8 +262,11 @@ func _validate_property(property: Dictionary) -> void:
 		"tex_joystick_base", "tex_joystick_thumb", "tex_joystick_thumb_pressed":
 			if not is_joystick:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
-		"dynamic_tolerance_multiplier":
+		"clampzone_ratio", "debug_clampzone":
 			if not (is_joystick and is_dynamic):
+				property.usage = PROPERTY_USAGE_NO_EDITOR
+		"clampzone_color":
+			if not (is_joystick and is_dynamic and debug_clampzone):
 				property.usage = PROPERTY_USAGE_NO_EDITOR
 		"dpad_radius",\
 		"Colors - D-Pad",\
@@ -270,7 +316,7 @@ func _validate_property(property: Dictionary) -> void:
 			if not (use_active_region and debug_show_region):
 				property.usage = PROPERTY_USAGE_NO_EDITOR
 		"debug_deadzone_color":
-			if not debug_show_deadzone:
+			if not debug_deadzone:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
 # Deadzone: dynamic max = thumb_radius / joystick_radius
 		"deadzone":
@@ -389,7 +435,7 @@ func _begin_touch(index: int, screen_pos: Vector2) -> void:
 		return
 	_touch_index = index
 	is_pressed = true
-	if controller_style == ControllerStyle.JOYSTICK and joystick_position_mode == JoystickPositionMode.DYNAMIC:
+	if controller_style == ControllerStyle.JOYSTICK and joystick_mode == JoystickMode.DYNAMIC:
 		_reposition_base(screen_pos)
 		_center = size / 2.0
 		_knob_pos = _center
@@ -411,7 +457,7 @@ func _reposition_base(screen_pos: Vector2) -> void:
 func _update_stick(screen_pos: Vector2) -> void:
 	var radius: float = _active_radius()
 	var is_dynamic_js:  bool = (controller_style == ControllerStyle.JOYSTICK and
-								joystick_position_mode == JoystickPositionMode.DYNAMIC)
+								joystick_mode == JoystickMode.DYNAMIC)
 	var is_static_mode: bool = not is_dynamic_js
 # Active region enforcement
 	if use_active_region and is_static_mode:
@@ -426,7 +472,7 @@ func _update_stick(screen_pos: Vector2) -> void:
 
 # DYNAMIC mode: slide base, clamped to active region
 	if is_dynamic_js:
-		if dist > radius * dynamic_tolerance_multiplier:
+		if dist > radius * clampzone_ratio:
 			_do_release()
 			return
 
@@ -467,7 +513,7 @@ func _do_release() -> void:
 	value = Vector2.ZERO
 	_dpad_active = Vector2.ZERO
 	_knob_pos = _center
-	if controller_style == ControllerStyle.JOYSTICK and joystick_position_mode == JoystickPositionMode.DYNAMIC:
+	if controller_style == ControllerStyle.JOYSTICK and joystick_mode == JoystickMode.DYNAMIC:
 		position = _origin_pos
 		_center = size / 2.0
 		_knob_pos = _center
@@ -563,7 +609,10 @@ func _draw() -> void:
 	match controller_style:
 		ControllerStyle.JOYSTICK: _draw_joystick()
 		ControllerStyle.DPAD: _draw_dpad()
-	if Engine.is_editor_hint() and debug_show_deadzone:
+	if Engine.is_editor_hint() and controller_style == ControllerStyle.JOYSTICK \
+			and joystick_mode == JoystickMode.DYNAMIC and debug_clampzone:
+		_draw_debug_clampzone()
+	if Engine.is_editor_hint() and debug_deadzone:
 		_draw_debug_deadzone()
 
 func _draw_joystick() -> void:
@@ -703,6 +752,15 @@ func _draw_debug_deadzone() -> void:
 							debug_deadzone_color.b, debug_deadzone_color.a * 0.45)
 	draw_circle(_center, r, fill)
 	draw_arc(_center, r, 0.0, TAU, 64, debug_deadzone_color, 2.0)
+
+func _draw_debug_clampzone() -> void:
+	# Shows the auto-release boundary: radius * clampzone_ratio
+	# around the base's current center (the base itself may have slid already).
+	var r: float = joystick_radius * clampzone_ratio
+	var fill: Color = Color(clampzone_color.r, clampzone_color.g,
+							clampzone_color.b, clampzone_color.a * 0.12)
+	draw_circle(_center, r, fill)
+	draw_arc(_center, r, 0.0, TAU, 64, clampzone_color, 2.0)
 #endregion
 
 func release() -> void: _do_release()
@@ -712,7 +770,7 @@ func get_value() -> Vector2: return value
 func _get_configuration_warnings() -> PackedStringArray:
 	var w: PackedStringArray = []
 	var r: float = _active_radius()
-	if joystick_position_mode == JoystickPositionMode.DYNAMIC and controller_style == ControllerStyle.DPAD:
+	if joystick_mode == JoystickMode.DYNAMIC and controller_style == ControllerStyle.DPAD:
 		w.append("DYNAMIC only works with JOYSTICK. The D-Pad always uses STATIC.")
 	if size.x < r * 2.0 or size.y < r * 2.0:
 		w.append("The node is smaller than the control diameter (%dpx). Adjust the size." % int(r * 2.0))
