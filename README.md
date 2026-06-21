@@ -5,9 +5,11 @@
  </div>
  <br>
 
+** Virtual Joystick DX (v0.3) **
+
 A fully customizable virtual joystick for touchscreen mobile games. Switch between a smooth **360° analog joystick** and an **8-direction D-Pad**.
 
-**Compatible with Godot 4.3+ — tested on 4.6.x**
+**Compatible with Godot 4.3+ — tested on 4.7**
 
 ---
 
@@ -15,7 +17,7 @@ A fully customizable virtual joystick for touchscreen mobile games. Switch betwe
 
 1. Copy `addons/virtual_joystick_DX/` into your project's `addons/` folder.
 2. **Project → Project Settings → Plugins** → enable **Virtual Joystick DX**.
-3. Add the `VirtualJoystickDeluxe` node to a `CanvasLayer`.
+3. Add the `VirtualJoystickDX` node to a `CanvasLayer`.
 
 ---
 
@@ -39,17 +41,46 @@ func _physics_process(_delta: float) -> void:
 
 The Inspector hides parameters that don't apply to the selected style. All hidden values are still saved.
 
+---
+
+## Controller Settings
 ### Controller Style
+
 | Property | Default | Description |
 |---|---|---|
 | `controller_style` | `JOYSTICK` | `JOYSTICK` — smooth 360°. `DPAD` — 8-direction cross. |
 
-### Joystick Mode *(Joystick only)*
-| Property | Default | Description |
+---
+
+| Property | Mode | Default | Description |
+|---|---|---|---|
+| `joystick_radius` | Joystick | `80 px` | Base radius. Also sets the node's minimum size. |
+| `thumb_radius` | Joystick | `28 px` | Knob radius. Sets the deadzone maximum. |
+| `dpad_radius` | D-Pad | `80 px` | D-Pad base radius. |
+| `deadzone` | Both | `0.15` | Dead area as a fraction of the radius. Max = `thumb_radius / joystick_radius` (Joystick) or `0.9` (D-Pad). Set to `0` for constant speed from any position. |
+| `debug_deadzone` | Both | `true` | Filled circle overlay showing the deadzone boundary, drawn on top. Editor only. |
+| `debug_deadzone_color` | Both | red | Color of the deadzone overlay. |
+| `clampzone_ratio` | Joystick + Dynamic/Following | `1.5` | Distance multiplier (×`joystick_radius`) from the clamped base center before auto-release. Range `1.0–3.0`. |
+| `debug_clampzone` | Joystick + Dynamic/Following | `false` | Circle overlay showing the auto-release boundary. Editor only. |
+| `clampzone_color` | Joystick + Dynamic/Following | yellow | Color of the clampzone overlay. |
+
+### Deadzone
+
+The maximum allowed `deadzone` is `thumb_radius / joystick_radius`. At maximum deadzone, the dead area is exactly as large as the thumb, so the knob resting at center is already at the boundary. The slider max updates in real time when either radius changes.
+
+### Joystick Mode
+| Mode | Activates on touch... | Once active |
 |---|---|---|
-| `joystick_position_mode` | `STATIC` | `STATIC` — fixed base. `DYNAMIC` — base spawns at touch point, slides with the finger, clamped to the active region. |
+| `STATIC` | anywhere in the active region | base never moves |
+| `DYNAMIC` | anywhere in the active region | base teleports to the touch point, then slides to follow the finger |
+| `FOLLOWING` | only directly on the joystick itself — touches elsewhere in the active region do nothing | base stays put until the finger exceeds `joystick_radius`, then follows exactly like `DYNAMIC` |
+
+`DYNAMIC` and `FOLLOWING` share the same follow mechanic (slide, clamp, auto-release) — they only differ in how the control gets activated. Both return to their origin position on release.
 
 ### Settings — Input Mapping
+
+Each field is a dropdown showing all built-in and project-defined actions, but also accepts free text — type any action name directly.
+
 | Property | Default |
 |---|---|
 | `action_left` | `ui_left` |
@@ -57,7 +88,12 @@ The Inspector hides parameters that don't apply to the selected style. All hidde
 | `action_up` | `ui_up` |
 | `action_down` | `ui_down` |
 
-Set the inputs according to what you have configured in Project → Project Settings → Input Mapping.
+### Dynamic Visibility (Hardware detection)
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `auto_hide_on_physical_input` | bool | `true` | Hides the control when a gamepad connects, a physical key is pressed, or the physical gamepad stick or buttons are actively used. |
+| `auto_show_on_touch` | bool | `true` | Re-shows the control when the screen is touched, even if a gamepad is still connected. Once visible again, any gamepad input will hide it once more. Only has effect when `auto_hide_on_physical_input` is also enabled. |
 
 ### Active Region
 | Property | Default | Description |
@@ -68,29 +104,7 @@ Set the inputs according to what you have configured in Project → Project Sett
 | `debug_show_region` | `true` | Green overlay visible in the editor only. |
 | `debug_region_color` | green | Color of the region overlay. |
 
-In **Static / D-Pad** mode the control auto-releases if the finger leaves the region. In **Dynamic** mode the base clamps to the region boundary instead.
-
-### Deadzone
-
-The maximum allowed `deadzone` is `thumb_radius / joystick_radius`. At maximum deadzone, the dead area is exactly as large as the thumb, so the knob resting at center is already at the boundary. The slider max updates in real time when either radius changes.
-
-### Dynamic Visibility (Hardware detection)
-
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `auto_hide_on_physical_input` | bool | `true` | Hides the control when a gamepad connects, a physical key is pressed, or the physical gamepad stick or buttons are actively used. |
-| `auto_show_on_touch` | bool | `true` | Re-shows the control when the screen is touched, even if a gamepad is still connected. Once visible again, any gamepad input will hide it once more. Only has effect when `auto_hide_on_physical_input` is also enabled. |
-
-### Size
-| Property | Mode | Default | Description |
-|---|---|---|---|
-| `joystick_radius` | Joystick | `80 px` | Base radius. Also sets the node's minimum size. |
-| `thumb_radius` | Joystick | `28 px` | Knob radius. Sets the deadzone maximum. |
-| `dpad_radius` | D-Pad | `80 px` | D-Pad base radius. |
-| `deadzone` | Both | `0.15` | Dead area as a fraction of the radius. Max = `thumb_radius / joystick_radius` (Joystick) or `0.9` (D-Pad). Set to `0` for constant speed from any position. |
-| `dynamic_tolerance_multiplier` | Joystick + Dynamic | `1.5` | Distance multiplier from the clamped base center before auto-release. |
-| `debug_show_deadzone` | Both | `false` | Filled circle overlay showing the deadzone boundary, drawn on top. Editor only. |
-| `debug_deadzone_color` | Both | yellow | Color of the deadzone overlay. |
+In **Static / D-Pad** mode the control auto-releases if the finger leaves the region during a drag. In **Dynamic / Following** mode the base clamps to the region boundary instead. Note: the active region only gates *activation* for `STATIC`/`DYNAMIC` — `FOLLOWING` ignores it for activation and always requires touching the joystick directly.
 
 ### Colors (fallback when no texture is set)
 **Joystick:** `color_js_base` `color_js_border` `color_js_thumb` `color_js_thumb_active`
@@ -163,6 +177,7 @@ func _ready() -> void:
 | Deadzone slider max too small | Increase `thumb_radius` or decrease `joystick_radius`. |
 | Region sliders don't reach full screen | Reselect the node to refresh slider ranges. |
 | D-Pad shows no texture | Verify `dpad_use_textures` is ON and preset SVGs are in the correct folder path. |
-| Dynamic mode on D-Pad | Not supported — D-Pad is always Static. |
+| Dynamic / Following mode on D-Pad | Not supported — D-Pad is always Static. |
+| Following does nothing on touch | Intended: `FOLLOWING` only activates on a direct touch of the joystick itself, not anywhere in the active region. |
 
 ---
