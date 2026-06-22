@@ -5,7 +5,7 @@
  </div>
  <br>
 
-** Virtual Joystick DX (v0.3) **
+** Virtual Joystick DX (v0.3a) **
 
 A fully customizable virtual joystick for touchscreen mobile games. Switch between a smooth **360° analog joystick** and an **8-direction D-Pad**.
 
