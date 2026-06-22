@@ -1,11 +1,19 @@
 # Virtual Joystick DX
+
+<div>
+ <br>
+ <img src="layout.webp" width="1080">
+ </div>
+
+---
+<div align="center">
+  <strong>Virtual Joystick DX (v0.3a)</strong>
+</div>
 <br>
 <div align="center">
- <img src="addons/virtual_joystick_DX/vjdx_asset_icon.png" width="256">
+ <img src="addons/virtual_joystick_DX/vjdx_asset_icon.png" width="64">
  </div>
- <br>
-
-** Virtual Joystick DX (v0.3a) **
+<br>
 
 A fully customizable virtual joystick for touchscreen mobile games. Switch between a smooth **360° analog joystick** and an **8-direction D-Pad**.
 
@@ -40,6 +48,12 @@ func _physics_process(_delta: float) -> void:
 ## Inspector Reference
 
 The Inspector hides parameters that don't apply to the selected style. All hidden values are still saved.
+<br>
+<div align="center">
+ <img src="Preview 1.webp" width="1080">
+  <img src="preview 2.webp" width="1080">
+ </div>
+ <br>
 
 ---
 
