@@ -10,10 +10,6 @@
   <strong>Virtual Joystick DX (v0.3a)</strong>
 </div>
 <br>
-<div align="center">
- <img src="addons/virtual_joystick_DX/vjdx_asset_icon.png" width="64">
- </div>
-<br>
 
 A fully customizable virtual joystick for touchscreen mobile games. Switch between a smooth **360° analog joystick** and an **8-direction D-Pad**.
 
