@@ -19,33 +19,35 @@ signal hardware_visibility_changed(is_visible: bool)
 #endregion
 
 #region Inspector Parameters
+# Helpers compartidos por los setters de abajo para no repetir notify+redraw(+warnings).
+func _refresh_inspector() -> void:
+	notify_property_list_changed()
+	queue_redraw()
+
+func _refresh_editor_state() -> void:
+	_refresh_inspector()
+	update_configuration_warnings()
+
 @export_category("Controller Settings")
 @export var controller_style: ControllerStyle = ControllerStyle.JOYSTICK:
 	set(v):
 		controller_style = v
-		notify_property_list_changed()
-		queue_redraw()
-		update_configuration_warnings()
+		_refresh_editor_state()
 # Joystick (hidden for D-Pad)
 @export_range(20.0, 400.0, 1.0, "suffix:px") var joystick_radius: float = 80.0:
 	set(v):
 		joystick_radius = maxf(v, 10.0)
 		custom_minimum_size = Vector2(joystick_radius * 2.0, joystick_radius * 2.0)
-		notify_property_list_changed()
-		queue_redraw()
-		update_configuration_warnings()
+		_refresh_editor_state()
 @export_range(5.0, 200.0, 1.0, "suffix:px") var thumb_radius: float = 28.0:
 	set(v):
 		thumb_radius = maxf(v, 5.0)
-		notify_property_list_changed()
-		queue_redraw()
+		_refresh_inspector()
 # D-Pad (hidden for Joystick)
 @export_range(20.0, 400.0, 1.0, "suffix:px") var dpad_radius: float = 80.0:
 	set(v):
 		dpad_radius = maxf(v, 10.0)
-		notify_property_list_changed()
-		queue_redraw()
-		update_configuration_warnings()
+		_refresh_editor_state()
 # Shared
 ## Deadzone as a fraction of the radius.
 ## Max is capped at the thumb radius (JOYSTICK) so the deadzone never exceeds the thumb size.
@@ -57,11 +59,10 @@ signal hardware_visibility_changed(is_visible: bool)
 @export var debug_deadzone: bool = true:
 	set(v):
 		debug_deadzone = v
-		notify_property_list_changed()
-		queue_redraw()
-@export var debug_deadzone_color: Color = Color(0.626, 0.014, 0.218, 0.702):
+		_refresh_inspector()
+@export var deadzone_color: Color = Color(0.626, 0.014, 0.218, 0.702):
 	set(v):
-		debug_deadzone_color = v
+		deadzone_color = v
 		queue_redraw()
 
 @export_category("Joystick Mode")
@@ -78,11 +79,10 @@ signal hardware_visibility_changed(is_visible: bool)
 		queue_redraw()
 ## [JOYSTICK + DYNAMIC only] Shows a circle representing the auto-release distance
 ## (radius * clampzone_ratio) around the base, drawn on top. Editor only.
-@export var debug_clampzone: bool = false:
+@export var debug_clampzone: bool = true:
 	set(v):
 		debug_clampzone = v
-		notify_property_list_changed()
-		queue_redraw()
+		_refresh_inspector()
 @export var clampzone_color: Color = Color(0.994, 1.0, 0.0, 0.612):
 	set(v):
 		clampzone_color = v
@@ -104,13 +104,11 @@ signal hardware_visibility_changed(is_visible: bool)
 @export var use_active_region: bool = true:
 	set(v):
 		use_active_region = v
-		notify_property_list_changed()
-		queue_redraw()
+		_refresh_inspector()
 @export var debug_show_region: bool = true:
 	set(v):
 		debug_show_region = v
-		notify_property_list_changed()
-		queue_redraw()
+		_refresh_inspector()
 @export var debug_region_color: Color = Color(0.1, 1.0, 0.4, 0.80):
 	set(v):
 		debug_region_color = v
@@ -121,18 +119,16 @@ signal hardware_visibility_changed(is_visible: bool)
 		var vp: = _get_viewport_size()
 		region_x = clampf(v, 0.0, vp.x)
 		region_w = clampf(region_w, 0.0, vp.x - region_x)
-		notify_property_list_changed()
-		queue_redraw()
+		_refresh_inspector()
 
 @export var region_y: float = 0.0:
 	set(v):
 		var vp: = _get_viewport_size()
 		region_y = clampf(v, 0.0, vp.y)
 		region_h = clampf(region_h, 0.0, vp.y - region_y)
-		notify_property_list_changed()
-		queue_redraw()
+		_refresh_inspector()
 
-@export var region_w: float = 648.0:
+@export var region_w: float = 576.0:
 	set(v):
 		var vp: = _get_viewport_size()
 		region_w = clampf(v, 0.0, vp.x - region_x)
@@ -163,18 +159,17 @@ var active_region: Rect2:
 @export var color_dp_arrow: Color = Color(1.00, 1.00, 1.00, 0.88)
 
 @export_group("Textures - Joystick")
+# Helper que evita repetir "= v; queue_redraw()" en cada slot de textura.
+func _set_tex(val: Texture2D) -> Texture2D:
+	queue_redraw()
+	return val
+
 @export var tex_joystick_base: Texture2D:
-	set(v):
-		tex_joystick_base = v
-		queue_redraw()
+	set(v): tex_joystick_base = _set_tex(v)
 @export var tex_joystick_thumb: Texture2D:
-	set(v):
-		tex_joystick_thumb = v
-		queue_redraw()
+	set(v): tex_joystick_thumb = _set_tex(v)
 @export var tex_joystick_thumb_pressed: Texture2D:
-	set(v):
-		tex_joystick_thumb_pressed = v
-		queue_redraw()
+	set(v): tex_joystick_thumb_pressed = _set_tex(v)
 
 @export_group("Textures - D-Pad")
 ## If enabled, the D-Pad uses a built-in preset as default.
@@ -183,8 +178,7 @@ var active_region: Rect2:
 @export var dpad_use_textures: bool = true:
 	set(v):
 		dpad_use_textures = v
-		notify_property_list_changed()
-		queue_redraw()
+		_refresh_inspector()
 ## Built-in texture preset used when no custom texture is assigned to a slot.
 @export var dpad_preset: DpadPreset = DpadPreset.PRESET_1:
 	set(v):
@@ -192,43 +186,25 @@ var active_region: Rect2:
 		_preset_cache_dirty = true
 		queue_redraw()
 @export var tex_dpad_idle: Texture2D:
-	set(v):
-		tex_dpad_idle = v
-		queue_redraw()
+	set(v): tex_dpad_idle = _set_tex(v)
 @export_subgroup("Cardinals")
 @export var tex_dpad_up: Texture2D:
-	set(v):
-		tex_dpad_up = v
-		queue_redraw()
+	set(v): tex_dpad_up = _set_tex(v)
 @export var tex_dpad_down: Texture2D:
-	set(v):
-		tex_dpad_down = v
-		queue_redraw()
+	set(v): tex_dpad_down = _set_tex(v)
 @export var tex_dpad_left: Texture2D:
-	set(v):
-		tex_dpad_left = v
-		queue_redraw()
+	set(v): tex_dpad_left = _set_tex(v)
 @export var tex_dpad_right: Texture2D:
-	set(v):
-		tex_dpad_right = v
-		queue_redraw()
+	set(v): tex_dpad_right = _set_tex(v)
 @export_subgroup("Diagonals")
 @export var tex_dpad_up_right: Texture2D:
-	set(v):
-		tex_dpad_up_right = v
-		queue_redraw()
+	set(v): tex_dpad_up_right = _set_tex(v)
 @export var tex_dpad_up_left: Texture2D:
-	set(v):
-		tex_dpad_up_left = v
-		queue_redraw()
+	set(v): tex_dpad_up_left = _set_tex(v)
 @export var tex_dpad_down_right: Texture2D:
-	set(v):
-		tex_dpad_down_right = v
-		queue_redraw()
+	set(v): tex_dpad_down_right = _set_tex(v)
 @export var tex_dpad_down_left: Texture2D:
-	set(v):
-		tex_dpad_down_left = v
-		queue_redraw()
+	set(v): tex_dpad_down_left = _set_tex(v)
 #endregion
 
 #region Internal State
@@ -246,6 +222,14 @@ var _preset_cache_dirty: bool = true
 #endregion
 
 #region Conditional Inspector Visibility
+# Helper compartido por region_x/y/w/h: oculta el campo o le fija el rango dinámico.
+func _apply_region_hint(property: Dictionary, max_val: float) -> void:
+	if not use_active_region:
+		property.usage = PROPERTY_USAGE_NO_EDITOR
+	else:
+		property.hint = PROPERTY_HINT_RANGE
+		property.hint_string = "0.0,%.0f,1.0,suffix:px" % max_val
+
 func _validate_property(property: Dictionary) -> void:
 	var is_joystick: bool = (controller_style == ControllerStyle.JOYSTICK)
 	var is_movable: bool = (joystick_mode == JoystickMode.DYNAMIC or joystick_mode == JoystickMode.FOLLOWING)
@@ -286,36 +270,20 @@ func _validate_property(property: Dictionary) -> void:
 # Hidden when use_active_region is disabled.
 # When visible, set dynamic ranges based on current viewport size.
 		"region_x":
-			if not use_active_region:
-				property.usage = PROPERTY_USAGE_NO_EDITOR
-			else:
-				property.hint = PROPERTY_HINT_RANGE
-				property.hint_string = "0.0,%.0f,1.0,suffix:px" % vp.x
+			_apply_region_hint(property, vp.x)
 		"region_y":
-			if not use_active_region:
-				property.usage = PROPERTY_USAGE_NO_EDITOR
-			else:
-				property.hint = PROPERTY_HINT_RANGE
-				property.hint_string = "0.0,%.0f,1.0,suffix:px" % vp.y
+			_apply_region_hint(property, vp.y)
 		"region_w":
-			if not use_active_region:
-				property.usage = PROPERTY_USAGE_NO_EDITOR
-			else:
-				property.hint = PROPERTY_HINT_RANGE
-				property.hint_string = "0.0,%.0f,1.0,suffix:px" % maxf(0.0, vp.x - region_x)
+			_apply_region_hint(property, maxf(0.0, vp.x - region_x))
 		"region_h":
-			if not use_active_region:
-				property.usage = PROPERTY_USAGE_NO_EDITOR
-			else:
-				property.hint = PROPERTY_HINT_RANGE
-				property.hint_string = "0.0,%.0f,1.0,suffix:px" % maxf(0.0, vp.y - region_y)
+			_apply_region_hint(property, maxf(0.0, vp.y - region_y))
 		"debug_show_region":
 			if not use_active_region:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
 		"debug_region_color":
 			if not (use_active_region and debug_show_region):
 				property.usage = PROPERTY_USAGE_NO_EDITOR
-		"debug_deadzone_color":
+		"deadzone_color":
 			if not debug_deadzone:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
 # Deadzone: dynamic max = thumb_radius / joystick_radius
@@ -582,25 +550,21 @@ func _calc_dpad(offset: Vector2, dist: float) -> void:
 # Use get_axis, NOT get_vector.
 # get_vector applies its own internal deadzone and may truncate values < 0.5.
 
+# Aplica el mismo manejo de press/release a un eje (neg_action para valores < 0, pos_action para > 0).
+func _apply_axis(val: float, neg_action: StringName, pos_action: StringName) -> void:
+	if val < 0.0:
+		if Input.is_action_pressed(pos_action): Input.action_release(pos_action)
+		Input.action_press(neg_action, absf(val))
+	elif val > 0.0:
+		if Input.is_action_pressed(neg_action): Input.action_release(neg_action)
+		Input.action_press(pos_action, val)
+	else:
+		Input.action_release(neg_action)
+		Input.action_release(pos_action)
+
 func _trigger_actions() -> void:
-	if value.x < 0.0:
-		if Input.is_action_pressed(action_right): Input.action_release(action_right)
-		Input.action_press(action_left, absf(value.x))
-	elif value.x > 0.0:
-		if Input.is_action_pressed(action_left): Input.action_release(action_left)
-		Input.action_press(action_right, value.x)
-	else:
-		Input.action_release(action_left)
-		Input.action_release(action_right)
-	if value.y < 0.0:
-		if Input.is_action_pressed(action_down): Input.action_release(action_down)
-		Input.action_press(action_up, absf(value.y))
-	elif value.y > 0.0:
-		if Input.is_action_pressed(action_up): Input.action_release(action_up)
-		Input.action_press(action_down, value.y)
-	else:
-		Input.action_release(action_up)
-		Input.action_release(action_down)
+	_apply_axis(value.x, action_left, action_right)
+	_apply_axis(value.y, action_up, action_down)
 
 func _reset_actions() -> void:
 	Input.action_release(action_left)
@@ -622,22 +586,34 @@ func _draw() -> void:
 	if Engine.is_editor_hint() and debug_deadzone:
 		_draw_debug_deadzone()
 
+# Rect2 centrado en "center" con radio "rad", usado por texturas circulares.
+func _rect_from_center(center: Vector2, rad: float) -> Rect2:
+	return Rect2(center - Vector2(rad, rad), Vector2(rad, rad) * 2.0)
+
+# Mismo color con el alpha multiplicado, usado por los overlays de debug.
+func _fill_color(base: Color, alpha_factor: float) -> Color:
+	return Color(base.r, base.g, base.b, base.a * alpha_factor)
+
+# draw_arc con los mismos argumentos (0.0, TAU, 64) repetidos en cada borde circular.
+func _draw_ring(center: Vector2, rad: float, col: Color, width: float) -> void:
+	draw_arc(center, rad, 0.0, TAU, 64, col, width)
+
 func _draw_joystick() -> void:
 	var c: Vector2 = _center
 	var r: float = joystick_radius
 
 	if tex_joystick_base:
-		draw_texture_rect(tex_joystick_base, Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0), false)
+		draw_texture_rect(tex_joystick_base, _rect_from_center(c, r), false)
 	else:
 		draw_circle(c, r, color_js_base)
-		draw_arc(c, r, 0.0, TAU, 64, color_js_border, 2.0)
+		_draw_ring(c, r, color_js_border, 2.0)
 
 	var tr: float = thumb_radius
 	var tp: Vector2 = _knob_pos
 	var tex: Texture2D = tex_joystick_thumb_pressed if (is_pressed and tex_joystick_thumb_pressed) else tex_joystick_thumb
 
 	if tex:
-		draw_texture_rect(tex, Rect2(tp - Vector2(tr, tr), Vector2(tr, tr) * 2.0), false)
+		draw_texture_rect(tex, _rect_from_center(tp, tr), false)
 	else:
 		draw_circle(tp + Vector2(1.5, 2.5), tr, Color(0.0, 0.0, 0.0, 0.22))
 		draw_circle(tp, tr, color_js_thumb_active if is_pressed else color_js_thumb)
@@ -661,43 +637,39 @@ func _load_preset_cache() -> void:
 			_preset_cache.append(null)
 	_preset_cache_dirty = false
 
-func _preset_state_index() -> int:
-	var x: = _dpad_active.x
-	var y: = _dpad_active.y
-	if y < 0 and x > 0: return 5
-	if y < 0 and x < 0: return 6
-	if y > 0 and x > 0: return 7
-	if y > 0 and x < 0: return 8
-	if y < 0: return 1
-	if y > 0: return 2
-	if x < 0: return 3
-	if x > 0: return 4
+# Mismo orden de octantes que _PRESET_FILES: idle, up, down, left, right, up_right, up_left, down_right, down_left.
+func _dpad_octant_index(pos_x: float, pos_y: float) -> int:
+	if pos_y < 0 and pos_x > 0: return 5
+	if pos_y < 0 and pos_x < 0: return 6
+	if pos_y > 0 and pos_x > 0: return 7
+	if pos_y > 0 and pos_x < 0: return 8
+	if pos_y < 0: return 1
+	if pos_y > 0: return 2
+	if pos_x < 0: return 3
+	if pos_x > 0: return 4
 	return 0
+
+# Slots custom en el mismo orden que _dpad_octant_index, para indexar directo por octante.
+func _custom_dpad_textures() -> Array[Texture2D]:
+	return [
+		tex_dpad_idle, tex_dpad_up, tex_dpad_down, tex_dpad_left, tex_dpad_right,
+		tex_dpad_up_right, tex_dpad_up_left, tex_dpad_down_right, tex_dpad_down_left,
+	]
 
 func _get_dpad_texture() -> Texture2D:
 	if not dpad_use_textures:
 		return null
 
+	var idx: int = _dpad_octant_index(_dpad_active.x, _dpad_active.y)
+
 	# Custom slot always overrides the preset
-	var x: = _dpad_active.x
-	var y: = _dpad_active.y
-	var custom: Texture2D
-	if y < 0 and x > 0: custom = tex_dpad_up_right
-	elif y < 0 and x < 0: custom = tex_dpad_up_left
-	elif y > 0 and x > 0: custom = tex_dpad_down_right
-	elif y > 0 and x < 0: custom = tex_dpad_down_left
-	elif y < 0: custom = tex_dpad_up
-	elif y > 0: custom = tex_dpad_down
-	elif x < 0: custom = tex_dpad_left
-	elif x > 0: custom = tex_dpad_right
-	else: custom = tex_dpad_idle
+	var custom: Texture2D = _custom_dpad_textures()[idx]
 	if custom:
 		return custom
 
 	# Preset fallback (lazy-loaded and cached)
 	if _preset_cache_dirty:
 		_load_preset_cache()
-	var idx: int = _preset_state_index()
 	if idx < _preset_cache.size():
 		return _preset_cache[idx]
 	return null
@@ -707,7 +679,7 @@ func _draw_dpad() -> void:
 	var r: float = dpad_radius
 	var arm: float = r * 0.54
 	var hw: float = r * 0.38
-	var rect_full := Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)
+	var rect_full := _rect_from_center(c, r)
 	var tex: = _get_dpad_texture()
 	if tex:
 		draw_texture_rect(tex, rect_full, false)
@@ -717,7 +689,7 @@ func _draw_dpad() -> void:
 	var cross_color: = Color(color_dp_bg.r * 0.6, color_dp_bg.g * 0.6, color_dp_bg.b * 0.6, color_dp_bg.a)
 	draw_rect(Rect2(c + Vector2(-hw, -r * 0.94), Vector2(hw * 2.0, r * 1.88)), cross_color, true)
 	draw_rect(Rect2(c + Vector2(-r * 0.94, -hw), Vector2(r * 1.88, hw * 2.0)), cross_color, true)
-	draw_arc(c, r * 0.98, 0.0, TAU, 64, color_dp_border, 1.5)
+	_draw_ring(c, r * 0.98, color_dp_border, 1.5)
 
 	var dirs: Array = [
 		{&"v": Vector2.UP, "off": Vector2(0.0, -arm)},
@@ -746,8 +718,7 @@ func _draw_debug_region() -> void:
 	var xf: Transform2D = get_global_transform().affine_inverse()
 	var tl: Vector2 = xf * active_region.position
 	var br: Vector2 = xf * active_region.end
-	var fill: Color = Color(debug_region_color.r, debug_region_color.g,
-								debug_region_color.b, debug_region_color.a * 0.18)
+	var fill: Color = _fill_color(debug_region_color, 0.18)
 	draw_rect(Rect2(tl, br - tl), fill, true)
 	draw_rect(Rect2(tl, br - tl), debug_region_color, false, 2.0)
 
@@ -755,19 +726,17 @@ func _draw_debug_deadzone() -> void:
 	var r: float = deadzone * _active_radius()
 	if r < 0.5:
 		return
-	var fill: Color = Color(debug_deadzone_color.r, debug_deadzone_color.g,
-							debug_deadzone_color.b, debug_deadzone_color.a * 0.45)
+	var fill: Color = _fill_color(deadzone_color, 0.45)
 	draw_circle(_center, r, fill)
-	draw_arc(_center, r, 0.0, TAU, 64, debug_deadzone_color, 2.0)
+	_draw_ring(_center, r, deadzone_color, 2.0)
 
 func _draw_debug_clampzone() -> void:
 	# Shows the auto-release boundary: radius * clampzone_ratio
 	# around the base's current center (the base itself may have slid already).
 	var r: float = joystick_radius * clampzone_ratio
-	var fill: Color = Color(clampzone_color.r, clampzone_color.g,
-							clampzone_color.b, clampzone_color.a * 0.12)
+	var fill: Color = _fill_color(clampzone_color, 0.12)
 	draw_circle(_center, r, fill)
-	draw_arc(_center, r, 0.0, TAU, 64, clampzone_color, 2.0)
+	_draw_ring(_center, r, clampzone_color, 2.0)
 #endregion
 
 func release() -> void: _do_release()

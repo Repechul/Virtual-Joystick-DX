@@ -1,11 +1,11 @@
 # Virtual Joystick DX
 <br>
 <div align="center">
- <img src="addons/virtual_joystick_DX/vjdx_asset_icon.png" width="256">
+ <img src="vjdx_asset_icon.png" width="256">
  </div>
  <br>
 
-** Virtual Joystick DX (v0.3) **
+** Virtual Joystick DX (v0.3a) **
 
 A fully customizable virtual joystick for touchscreen mobile games. Switch between a smooth **360° analog joystick** and an **8-direction D-Pad**.
 
