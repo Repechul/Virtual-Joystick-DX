@@ -5,6 +5,7 @@
 extends Control
 class_name VirtualJoystickDX
 
+#FIUMBA
 #region Enums & Signals
 enum ControllerStyle {JOYSTICK, DPAD}
 enum JoystickMode {STATIC, DYNAMIC, FOLLOWING}
@@ -19,7 +20,7 @@ signal hardware_visibility_changed(is_visible: bool)
 #endregion
 
 #region Inspector Parameters
-# Helpers compartidos por los setters de abajo para no repetir notify+redraw(+warnings).
+# Helpers shared by the setters below to avoid repeating notify+redraw(+warnings).
 func _refresh_inspector() -> void:
 	notify_property_list_changed()
 	queue_redraw()
@@ -60,7 +61,7 @@ func _refresh_editor_state() -> void:
 	set(v):
 		debug_deadzone = v
 		_refresh_inspector()
-@export var deadzone_color: Color = Color(0.626, 0.014, 0.218, 0.702):
+@export var deadzone_color: Color = Color(0xe93d3dff):
 	set(v):
 		deadzone_color = v
 		queue_redraw()
@@ -83,7 +84,7 @@ func _refresh_editor_state() -> void:
 	set(v):
 		debug_clampzone = v
 		_refresh_inspector()
-@export var clampzone_color: Color = Color(0.994, 1.0, 0.0, 0.612):
+@export var clampzone_color: Color = Color(0xe9e83dbd):
 	set(v):
 		clampzone_color = v
 		queue_redraw()
@@ -109,7 +110,7 @@ func _refresh_editor_state() -> void:
 	set(v):
 		debug_show_region = v
 		_refresh_inspector()
-@export var debug_region_color: Color = Color(0.1, 1.0, 0.4, 0.80):
+@export var debug_region_color: Color = Color(0x3de976bd):
 	set(v):
 		debug_region_color = v
 		queue_redraw()
@@ -146,20 +147,20 @@ var active_region: Rect2:
 # Textures
 @export_category("Textures")
 @export_group("Colors - Joystick")
-@export var color_js_base: Color = Color(0.12, 0.12, 0.12, 0.55)
-@export var color_js_border: Color = Color(0.88, 0.88, 0.88, 0.42)
-@export var color_js_thumb: Color = Color(0.90, 0.90, 0.90, 0.82)
-@export var color_js_thumb_active: Color = Color(1.00, 0.55, 0.08, 0.95)
+@export var color_js_base: Color = Color(0x1f1f1f8c)
+@export var color_js_border: Color = Color(0xe0e0e06b)
+@export var color_js_thumb: Color = Color(0xe6e6e6d1)
+@export var color_js_thumb_active: Color = Color(0xe97d3dff)
 
 @export_group("Colors - D-Pad")
-@export var color_dp_bg: Color = Color(0.08, 0.08, 0.08, 0.35)
-@export var color_dp_border: Color = Color(0.88, 0.88, 0.88, 0.42)
-@export var color_dp_normal: Color = Color(0.35, 0.35, 0.35, 0.72)
-@export var color_dp_active: Color = Color(0.95, 0.42, 0.07, 0.97)
-@export var color_dp_arrow: Color = Color(1.00, 1.00, 1.00, 0.88)
+@export var color_dp_bg: Color = Color(0x14141459)
+@export var color_dp_border: Color = Color(0xe0e0e06b)
+@export var color_dp_normal: Color = Color(0x595959b8)
+@export var color_dp_active: Color = Color(0xe97d3dff)
+@export var color_dp_arrow: Color = Color(0xffffffe0)
 
 @export_group("Textures - Joystick")
-# Helper que evita repetir "= v; queue_redraw()" en cada slot de textura.
+# Helper that avoids repeating "= v; queue_redraw()" in each texture slot.
 func _set_tex(val: Texture2D) -> Texture2D:
 	queue_redraw()
 	return val
@@ -222,7 +223,7 @@ var _preset_cache_dirty: bool = true
 #endregion
 
 #region Conditional Inspector Visibility
-# Helper compartido por region_x/y/w/h: oculta el campo o le fija el rango dinámico.
+## Helper shared by region_x/y/w/h: hides the field or sets its dynamic range.
 func _apply_region_hint(property: Dictionary, max_val: float) -> void:
 	if not use_active_region:
 		property.usage = PROPERTY_USAGE_NO_EDITOR
@@ -266,9 +267,9 @@ func _validate_property(property: Dictionary) -> void:
 		"Diagonals", "tex_dpad_up_right", "tex_dpad_up_left", "tex_dpad_down_right", "tex_dpad_down_left":
 			if is_joystick or not dpad_use_textures:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
-# Active Region sub-properties
-# Hidden when use_active_region is disabled.
-# When visible, set dynamic ranges based on current viewport size.
+## Active Region sub-properties
+## Hidden when use_active_region is disabled.
+## When visible, set dynamic ranges based on current viewport size.
 		"region_x":
 			_apply_region_hint(property, vp.x)
 		"region_y":
@@ -286,7 +287,7 @@ func _validate_property(property: Dictionary) -> void:
 		"deadzone_color":
 			if not debug_deadzone:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
-# Deadzone: dynamic max = thumb_radius / joystick_radius
+## Deadzone: dynamic max = thumb_radius / joystick_radius
 		"deadzone":
 			property.hint = PROPERTY_HINT_RANGE
 			property.hint_string = "0.0,%.3f,0.001" % _max_deadzone()
@@ -399,8 +400,8 @@ func _in_start_region(screen_pos: Vector2) -> bool:
 func _begin_touch(index: int, screen_pos: Vector2) -> void:
 	if _touch_index != -1:
 		return
-# FOLLOWING: must touch the joystick's own current rect directly.
-# active_region is ignored for this gate — it only constrains the slide once active.
+## FOLLOWING: must touch the joystick's own current rect directly.
+## active_region is ignored for this gate — it only constrains the slide once active.
 	if controller_style == ControllerStyle.JOYSTICK and joystick_mode == JoystickMode.FOLLOWING:
 		if not get_global_rect().has_point(screen_pos):
 			return
@@ -415,7 +416,7 @@ func _begin_touch(index: int, screen_pos: Vector2) -> void:
 	_update_stick(screen_pos)
 
 func _reposition_base(screen_pos: Vector2) -> void:
-	# Clamp the initial spawn position so the base center stays inside the active region.
+	## Clamp the initial spawn position so the base center stays inside the active region.
 	var spawn: Vector2 = screen_pos
 	if use_active_region:
 		spawn.x = clampf(spawn.x, active_region.position.x, active_region.end.x)
@@ -432,9 +433,9 @@ func _update_stick(screen_pos: Vector2) -> void:
 	var is_movable_js: bool = (controller_style == ControllerStyle.JOYSTICK and
 								(joystick_mode == JoystickMode.DYNAMIC or joystick_mode == JoystickMode.FOLLOWING))
 	var is_static_mode: bool = not is_movable_js
-# Active region enforcement
+## Active region enforcement
 	if use_active_region and is_static_mode:
-# STATIC joystick and D-Pad: finger leaving the active region = release.
+## STATIC joystick and D-Pad: finger leaving the active region = release.
 		if not active_region.has_point(screen_pos):
 			_do_release()
 			return
@@ -443,9 +444,9 @@ func _update_stick(screen_pos: Vector2) -> void:
 	var offset: Vector2 = local_pos - _center
 	var dist: float = offset.length()
 
-# DYNAMIC + FOLLOWING: slide base, clamped to active region.
-# Both modes share the exact same follow mechanic from here on —
-# they only differ in how the control gets activated (see _begin_touch).
+## DYNAMIC + FOLLOWING: slide base, clamped to active region.
+## Both modes share the exact same follow mechanic from here on —
+## they only differ in how the control gets activated (see _begin_touch).
 	if is_movable_js:
 		if dist > radius * clampzone_ratio:
 			_do_release()
@@ -453,9 +454,9 @@ func _update_stick(screen_pos: Vector2) -> void:
 
 		if dist > radius:
 			var dir: Vector2 = offset / dist
-# Ideal new base center in screen/viewport coordinates.
+## Ideal new base center in screen/viewport coordinates.
 			var target_center: Vector2 = (global_position + _center) + offset - dir * radius
-# Clamp base center so it never exits the active region.
+## Clamp base center so it never exits the active region.
 			if use_active_region:
 				target_center.x = clampf(target_center.x, active_region.position.x, active_region.end.x)
 				target_center.y = clampf(target_center.y, active_region.position.y, active_region.end.y)
@@ -466,12 +467,12 @@ func _update_stick(screen_pos: Vector2) -> void:
 			else:
 				new_pos = target_center
 			position = new_pos - size / 2.0
-# Recalculate offset after the base moved.
+## Recalculate offset after the base moved.
 			local_pos = _to_local(screen_pos)
 			offset = local_pos - _center
 			dist = offset.length()
-# Knob always follows the finger, clamped to the radius.
-# The deadzone never affects the knob's visual position.
+## Knob always follows the finger, clamped to the radius.
+## The deadzone never affects the knob's visual position.
 	_knob_pos = _center + offset.limit_length(radius)
 	match controller_style:
 		ControllerStyle.JOYSTICK: _calc_joystick(offset, dist)
@@ -550,7 +551,7 @@ func _calc_dpad(offset: Vector2, dist: float) -> void:
 # Use get_axis, NOT get_vector.
 # get_vector applies its own internal deadzone and may truncate values < 0.5.
 
-# Aplica el mismo manejo de press/release a un eje (neg_action para valores < 0, pos_action para > 0).
+## It applies the same press/release handling to an axis (neg_action for values < 0, pos_action para > 0).
 func _apply_axis(val: float, neg_action: StringName, pos_action: StringName) -> void:
 	if val < 0.0:
 		if Input.is_action_pressed(pos_action): Input.action_release(pos_action)
@@ -586,15 +587,15 @@ func _draw() -> void:
 	if Engine.is_editor_hint() and debug_deadzone:
 		_draw_debug_deadzone()
 
-# Rect2 centrado en "center" con radio "rad", usado por texturas circulares.
+# Rect2 centered on "center" with radius "rad", used by circular textures.
 func _rect_from_center(center: Vector2, rad: float) -> Rect2:
 	return Rect2(center - Vector2(rad, rad), Vector2(rad, rad) * 2.0)
 
-# Mismo color con el alpha multiplicado, usado por los overlays de debug.
+# Same color with multiplied alpha, used by debug overlays.
 func _fill_color(base: Color, alpha_factor: float) -> Color:
 	return Color(base.r, base.g, base.b, base.a * alpha_factor)
 
-# draw_arc con los mismos argumentos (0.0, TAU, 64) repetidos en cada borde circular.
+## draw_arc with the same arguments (0.0, TAU, 64) repeated on each circular edge.
 func _draw_ring(center: Vector2, rad: float, col: Color, width: float) -> void:
 	draw_arc(center, rad, 0.0, TAU, 64, col, width)
 
@@ -615,7 +616,7 @@ func _draw_joystick() -> void:
 	if tex:
 		draw_texture_rect(tex, _rect_from_center(tp, tr), false)
 	else:
-		draw_circle(tp + Vector2(1.5, 2.5), tr, Color(0.0, 0.0, 0.0, 0.22))
+		draw_circle(tp + Vector2(1.5, 2.5), tr, Color(0xe0e0e06b))
 		draw_circle(tp, tr, color_js_thumb_active if is_pressed else color_js_thumb)
 
 const _PRESET_FILES: Array[String] = [
@@ -637,7 +638,7 @@ func _load_preset_cache() -> void:
 			_preset_cache.append(null)
 	_preset_cache_dirty = false
 
-# Mismo orden de octantes que _PRESET_FILES: idle, up, down, left, right, up_right, up_left, down_right, down_left.
+# Same octant order as _PRESET_FILES: idle, up, down, left, right, up_right, up_left, down_right, down_left.
 func _dpad_octant_index(pos_x: float, pos_y: float) -> int:
 	if pos_y < 0 and pos_x > 0: return 5
 	if pos_y < 0 and pos_x < 0: return 6
@@ -649,7 +650,7 @@ func _dpad_octant_index(pos_x: float, pos_y: float) -> int:
 	if pos_x > 0: return 4
 	return 0
 
-# Slots custom en el mismo orden que _dpad_octant_index, para indexar directo por octante.
+## Custom slots in the same order as _dpad_octant_index, to index directly by octant.
 func _custom_dpad_textures() -> Array[Texture2D]:
 	return [
 		tex_dpad_idle, tex_dpad_up, tex_dpad_down, tex_dpad_left, tex_dpad_right,

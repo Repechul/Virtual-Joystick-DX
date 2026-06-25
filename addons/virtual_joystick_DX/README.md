@@ -1,12 +1,11 @@
 # Virtual Joystick DX
+
+---
+
+<div><strong>Virtual Joystick DX (v0.3b)</strong>
+</div>
 <br>
-<div align="center">
- <img src="vjdx_asset_icon.png" width="256">
- </div>
- <br>
-
-** Virtual Joystick DX (v0.3a) **
-
+<br>
 A fully customizable virtual joystick for touchscreen mobile games. Switch between a smooth **360° analog joystick** and an **8-direction D-Pad**.
 
 **Compatible with Godot 4.3+ — tested on 4.7**
@@ -69,7 +68,7 @@ The Inspector hides parameters that don't apply to the selected style. All hidde
 The maximum allowed `deadzone` is `thumb_radius / joystick_radius`. At maximum deadzone, the dead area is exactly as large as the thumb, so the knob resting at center is already at the boundary. The slider max updates in real time when either radius changes.
 
 ### Joystick Mode
-| Mode | Activates on touch... | Once active |
+| Mode | Activates On Touch... | Once Active |
 |---|---|---|
 | `STATIC` | anywhere in the active region | base never moves |
 | `DYNAMIC` | anywhere in the active region | base teleports to the touch point, then slides to follow the finger |
@@ -88,7 +87,7 @@ Each field is a dropdown showing all built-in and project-defined actions, but a
 | `action_up` | `ui_up` |
 | `action_down` | `ui_down` |
 
-### Dynamic Visibility (Hardware detection)
+### Dynamic Visibility (Hardware Detection)
 
 | Property | Type | Default | Description |
 |---|---|---|---|
@@ -106,19 +105,19 @@ Each field is a dropdown showing all built-in and project-defined actions, but a
 
 In **Static / D-Pad** mode the control auto-releases if the finger leaves the region during a drag. In **Dynamic / Following** mode the base clamps to the region boundary instead. Note: the active region only gates *activation* for `STATIC`/`DYNAMIC` — `FOLLOWING` ignores it for activation and always requires touching the joystick directly.
 
-### Colors (fallback when no texture is set)
+### Colors (Fallback When No Texture Is Set)
 **Joystick:** `color_js_base` `color_js_border` `color_js_thumb` `color_js_thumb_active`
 
 **D-Pad:** `color_dp_bg` `color_dp_border` `color_dp_normal` `color_dp_active` `color_dp_arrow`
 
-### Textures — Joystick *(Joystick only)*
+### Textures — Joystick *(Joystick Only)*
 | Property | Size |
 |---|---|
 | `tex_joystick_base` | `joystick_radius × 2` sq. |
 | `tex_joystick_thumb` | `thumb_radius × 2` sq. |
 | `tex_joystick_thumb_pressed` | `thumb_radius × 2` sq. |
 
-### Textures — D-Pad *(D-Pad only)*
+### Textures — D-Pad *(D-Pad Only)*
 
 | Property | Default | Description |
 |---|---|---|
