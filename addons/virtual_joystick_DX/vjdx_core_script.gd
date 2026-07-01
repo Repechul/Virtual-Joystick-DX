@@ -66,6 +66,51 @@ func _refresh_editor_state() -> void:
 		deadzone_color = v
 		queue_redraw()
 
+@export_group("Haptic Feedback")
+## Enable or disable all haptic feedback from this control.
+@export var haptic_enabled: bool = true:
+	set(v):
+		haptic_enabled = v
+		_refresh_inspector()
+## [JOYSTICK only] Vibration when the finger first touches and activates the control.
+@export var haptic_joystick_on_press: bool = true:
+	set(value):
+		haptic_joystick_on_press = value
+		_refresh_editor_state()
+@export_range(10, 500, 1, "suffix:ms") var haptic_joystick_press_duration: int = 25
+@export_range(0.0, 1.0, 0.05) var haptic_joystick_press_amplitude: float = 0.4
+## [JOYSTICK only] Vibration when the control is released.
+@export var haptic_joystick_on_release: bool = true:
+	set(value):
+		haptic_joystick_on_release = value
+		_refresh_editor_state()
+@export_range(10, 500, 1, "suffix:ms") var haptic_joystick_release_duration: int = 20
+@export_range(0.0, 1.0, 0.05) var haptic_joystick_release_amplitude: float = 0.25
+
+## [D-PAD only] Vibration when the finger first touches and activates the control.
+@export var haptic_dpad_on_press: bool = true:
+	set(value):
+		haptic_dpad_on_press = value
+		_refresh_editor_state()
+@export_range(10, 500, 1, "suffix:ms") var haptic_dpad_press_duration: int = 25
+@export_range(0.0, 1.0, 0.05) var haptic_dpad_press_amplitude: float = 0.4
+## [D-PAD only] Vibration when the control is released.
+@export var haptic_dpad_on_release: bool = true:
+	set(value):
+		haptic_dpad_on_release = value
+		_refresh_editor_state()
+@export_range(10, 500, 1, "suffix:ms") var haptic_dpad_release_duration: int = 20
+@export_range(0.0, 1.0, 0.05) var haptic_dpad_release_amplitude: float = 0.25
+## [D-PAD only] Short tick each time the active direction changes.
+@export var haptic_dpad_on_change: bool = true
+@export_range(10, 200, 1, "suffix:ms") var haptic_dpad_change_duration: int = 18
+@export_range(0.0, 1.0, 0.05) var haptic_dpad_change_amplitude: float = 0.55
+
+@export_category("Dynamic Visibility")
+@export_group("Auto-hide by Hardware")
+@export var auto_hide_on_physical_input: bool = true
+@export var auto_show_on_touch: bool = true
+
 @export_category("Joystick Mode")
 @export var joystick_mode: JoystickMode = JoystickMode.STATIC:
 	set(v):
@@ -95,11 +140,6 @@ func _refresh_editor_state() -> void:
 @export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_up : StringName = "ui_up"
 @export_custom(PROPERTY_HINT_INPUT_NAME, "show_builtin, loose_mode") var action_down : StringName = "ui_down"
 
-@export_category("Dynamic Visibility")
-@export_group("Auto-hide by Hardware")
-@export var auto_hide_on_physical_input: bool = true
-@export var auto_show_on_touch: bool = true
-
 # Active Region
 @export_category("Active Region")
 @export var use_active_region: bool = true:
@@ -120,14 +160,14 @@ func _refresh_editor_state() -> void:
 		var vp: = _get_viewport_size()
 		region_x = clampf(v, 0.0, vp.x)
 		region_w = clampf(region_w, 0.0, vp.x - region_x)
-		_refresh_inspector()
+		queue_redraw()
 
 @export var region_y: float = 0.0:
 	set(v):
 		var vp: = _get_viewport_size()
 		region_y = clampf(v, 0.0, vp.y)
 		region_h = clampf(region_h, 0.0, vp.y - region_y)
-		_refresh_inspector()
+		queue_redraw()
 
 @export var region_w: float = 576.0:
 	set(v):
@@ -220,6 +260,7 @@ var _origin_pos: Vector2 = Vector2.ZERO
 var _hidden_by_hw: bool = false
 var _preset_cache: Array[Texture2D] = []
 var _preset_cache_dirty: bool = true
+var _is_mobile: bool = false
 #endregion
 
 #region Conditional Inspector Visibility
@@ -267,9 +308,6 @@ func _validate_property(property: Dictionary) -> void:
 		"Diagonals", "tex_dpad_up_right", "tex_dpad_up_left", "tex_dpad_down_right", "tex_dpad_down_left":
 			if is_joystick or not dpad_use_textures:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
-## Active Region sub-properties
-## Hidden when use_active_region is disabled.
-## When visible, set dynamic ranges based on current viewport size.
 		"region_x":
 			_apply_region_hint(property, vp.x)
 		"region_y":
@@ -287,7 +325,30 @@ func _validate_property(property: Dictionary) -> void:
 		"deadzone_color":
 			if not debug_deadzone:
 				property.usage = PROPERTY_USAGE_NO_EDITOR
-## Deadzone: dynamic max = thumb_radius / joystick_radius
+		"haptic_joystick_on_press", "haptic_joystick_on_release":
+			if not haptic_enabled or not is_joystick:
+				property.usage = PROPERTY_USAGE_NO_EDITOR
+		"haptic_joystick_press_duration", "haptic_joystick_press_amplitude":
+			if not haptic_enabled or not is_joystick or not haptic_joystick_on_press:
+				property.usage = PROPERTY_USAGE_NO_EDITOR
+		"haptic_joystick_release_duration", "haptic_joystick_release_amplitude":
+			if not haptic_enabled or not is_joystick or not haptic_joystick_on_release:
+				property.usage = PROPERTY_USAGE_NO_EDITOR
+		"haptic_dpad_on_press", "haptic_dpad_on_release":
+			if not haptic_enabled or is_joystick:
+				property.usage = PROPERTY_USAGE_NO_EDITOR
+		"haptic_dpad_press_duration", "haptic_dpad_press_amplitude":
+			if not haptic_enabled or is_joystick or not haptic_dpad_on_press:
+				property.usage = PROPERTY_USAGE_NO_EDITOR
+		"haptic_dpad_release_duration", "haptic_dpad_release_amplitude":
+			if not haptic_enabled or is_joystick or not haptic_dpad_on_release:
+				property.usage = PROPERTY_USAGE_NO_EDITOR
+		"haptic_dpad_on_change":
+			if not haptic_enabled or is_joystick:
+				property.usage = PROPERTY_USAGE_NO_EDITOR
+		"haptic_dpad_change_duration", "haptic_dpad_change_amplitude":
+			if not haptic_enabled or is_joystick or not haptic_dpad_on_change:
+				property.usage = PROPERTY_USAGE_NO_EDITOR
 		"deadzone":
 			property.hint = PROPERTY_HINT_RANGE
 			property.hint_string = "0.0,%.3f,0.001" % _max_deadzone()
@@ -300,6 +361,7 @@ func _ready() -> void:
 	_knob_pos = _center
 	mouse_filter = MOUSE_FILTER_IGNORE
 	if not Engine.is_editor_hint():
+		_is_mobile = OS.has_feature("mobile")
 		set_process_input(true)
 		if auto_hide_on_physical_input:
 			Input.joy_connection_changed.connect(_on_joy_connection_changed)
@@ -344,7 +406,7 @@ func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 
 func _apply_hw_visibility(show: bool) -> void:
 	_hidden_by_hw = not show
-	visible= show
+	visible = show
 	hardware_visibility_changed.emit(show)
 	if not show:
 		_do_release()
@@ -397,6 +459,11 @@ func _in_start_region(screen_pos: Vector2) -> bool:
 	if use_active_region:
 		return active_region.has_point(screen_pos)
 	return get_global_rect().has_point(screen_pos)
+func _haptic_vibrate(duration_ms: int, amplitude: float) -> void:
+	if Engine.is_editor_hint() or not haptic_enabled or not _is_mobile:
+		return
+	Input.vibrate_handheld(duration_ms, amplitude)
+
 func _begin_touch(index: int, screen_pos: Vector2) -> void:
 	if _touch_index != -1:
 		return
@@ -409,6 +476,13 @@ func _begin_touch(index: int, screen_pos: Vector2) -> void:
 		return
 	_touch_index = index
 	is_pressed = true
+	match controller_style:
+		ControllerStyle.JOYSTICK:
+			if haptic_joystick_on_press:
+				_haptic_vibrate(haptic_joystick_press_duration, haptic_joystick_press_amplitude)
+		ControllerStyle.DPAD:
+			if haptic_dpad_on_press:
+				_haptic_vibrate(haptic_dpad_press_duration, haptic_dpad_press_amplitude)
 	if controller_style == ControllerStyle.JOYSTICK and joystick_mode == JoystickMode.DYNAMIC:
 		_reposition_base(screen_pos)
 		_center = size / 2.0
@@ -494,6 +568,13 @@ func _do_release() -> void:
 		_center = size / 2.0
 		_knob_pos = _center
 	_reset_actions()
+	match controller_style:
+		ControllerStyle.JOYSTICK:
+			if haptic_joystick_on_release:
+				_haptic_vibrate(haptic_joystick_release_duration, haptic_joystick_release_amplitude)
+		ControllerStyle.DPAD:
+			if haptic_dpad_on_release:
+				_haptic_vibrate(haptic_dpad_release_duration, haptic_dpad_release_amplitude)
 	joystick_released.emit()
 	queue_redraw()
 #endregion
@@ -539,6 +620,8 @@ func _calc_dpad(offset: Vector2, dist: float) -> void:
 		dir.x = signf(nx)
 		dir.y = signf(ny)
 
+	if haptic_dpad_on_change and dir != _dpad_active and dir != Vector2.ZERO:
+		_haptic_vibrate(haptic_dpad_change_duration, haptic_dpad_change_amplitude)
 	_dpad_active = dir
 	value = dir
 #endregion
@@ -650,12 +733,19 @@ func _dpad_octant_index(pos_x: float, pos_y: float) -> int:
 	if pos_x > 0: return 4
 	return 0
 
-## Custom slots in the same order as _dpad_octant_index, to index directly by octant.
-func _custom_dpad_textures() -> Array[Texture2D]:
-	return [
-		tex_dpad_idle, tex_dpad_up, tex_dpad_down, tex_dpad_left, tex_dpad_right,
-		tex_dpad_up_right, tex_dpad_up_left, tex_dpad_down_right, tex_dpad_down_left,
-	]
+## Custom slot for the given octant index, same order as _dpad_octant_index.
+func _custom_dpad_texture(idx: int) -> Texture2D:
+	match idx:
+		0: return tex_dpad_idle
+		1: return tex_dpad_up
+		2: return tex_dpad_down
+		3: return tex_dpad_left
+		4: return tex_dpad_right
+		5: return tex_dpad_up_right
+		6: return tex_dpad_up_left
+		7: return tex_dpad_down_right
+		8: return tex_dpad_down_left
+	return null
 
 func _get_dpad_texture() -> Texture2D:
 	if not dpad_use_textures:
@@ -664,7 +754,7 @@ func _get_dpad_texture() -> Texture2D:
 	var idx: int = _dpad_octant_index(_dpad_active.x, _dpad_active.y)
 
 	# Custom slot always overrides the preset
-	var custom: Texture2D = _custom_dpad_textures()[idx]
+	var custom: Texture2D = _custom_dpad_texture(idx)
 	if custom:
 		return custom
 

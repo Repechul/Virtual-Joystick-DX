@@ -2,7 +2,7 @@
 
 ---
 
-<div><strong>Virtual Joystick DX (v0.3b)</strong>
+<div><strong>Virtual Joystick DX (v0.4 - Haptic Feedback)</strong>
 </div>
 <br>
 <br>
@@ -66,6 +66,41 @@ The Inspector hides parameters that don't apply to the selected style. All hidde
 ### Deadzone
 
 The maximum allowed `deadzone` is `thumb_radius / joystick_radius`. At maximum deadzone, the dead area is exactly as large as the thumb, so the knob resting at center is already at the boundary. The slider max updates in real time when either radius changes.
+
+### Haptic Feedback
+
+| Property | Default | Description |
+|---|---|---|
+| `haptic_enabled` | `true` | Master switch for all haptic feedback on this control. |
+
+Press/release vibration is fully independent between **Joystick** and **D-Pad** — each style has its own toggle, duration and amplitude. Only the fields matching the current `controller_style` are shown.
+
+**Joystick**
+| Property | Default | Description |
+|---|---|---|
+| `haptic_joystick_on_press` | `true` | Vibrate when the finger first touches and activates the joystick. |
+| `haptic_joystick_press_duration` | `25 ms` | Range `10–500 ms`. |
+| `haptic_joystick_press_amplitude` | `0.4` | Range `0.0–1.0`. |
+| `haptic_joystick_on_release` | `true` | Vibrate when the joystick is released. |
+| `haptic_joystick_release_duration` | `20 ms` | Range `10–500 ms`. |
+| `haptic_joystick_release_amplitude` | `0.25` | Range `0.0–1.0`. |
+
+**D-Pad**
+| Property | Default | Description |
+|---|---|---|
+| `haptic_dpad_on_press` | `true` | Vibrate when the finger first touches and activates the D-Pad. |
+| `haptic_dpad_press_duration` | `25 ms` | Range `10–500 ms`. |
+| `haptic_dpad_press_amplitude` | `0.4` | Range `0.0–1.0`. |
+| `haptic_dpad_on_release` | `true` | Vibrate when the D-Pad is released. |
+| `haptic_dpad_release_duration` | `20 ms` | Range `10–500 ms`. |
+| `haptic_dpad_release_amplitude` | `0.25` | Range `0.0–1.0`. |
+| `haptic_dpad_on_change` | `true` | Short tick each time the active direction changes. Fires once per change, not periodically. |
+| `haptic_dpad_change_duration` | `18 ms` | Range `10–200 ms`. |
+| `haptic_dpad_change_amplitude` | `0.55` | Range `0.0–1.0`. |
+
+> **Android:** requires the **Vibrate** permission enabled in the export preset (Project → Export → Android → Permissions) — enabling it in Project Settings alone is not enough. Vibration calls are guarded by `OS.has_feature("mobile")`, so nothing fires on desktop or web.
+
+---
 
 ### Joystick Mode
 | Mode | Activates On Touch... | Once Active |
@@ -177,6 +212,7 @@ func _ready() -> void:
 | Region sliders don't reach full screen | Reselect the node to refresh slider ranges. |
 | D-Pad shows no texture | Verify `dpad_use_textures` is ON and preset SVGs are in the correct folder path. |
 | Dynamic / Following mode on D-Pad | Not supported — D-Pad is always Static. |
+| No vibration on device | Check `haptic_enabled` and the relevant `haptic_*_on_press` / `haptic_*_on_release` toggle, and confirm the **Vibrate** permission is enabled in the Android export preset. |
 | Following does nothing on touch | Intended: `FOLLOWING` only activates on a direct touch of the joystick itself, not anywhere in the active region. |
 
 ---
